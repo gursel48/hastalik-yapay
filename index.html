@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Balık Hastalıkları Deneme Sınavı</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0f4f8;
+      margin: 0;
+      padding: 10px;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 80px;
+    }
+
+    .app-shell {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .menu-container, .quiz-container {
+      background: #fff;
+      padding: 20px;
+      border-radius: 14px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      width: 100%;
+    }
+
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .menu-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      cursor: pointer;
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+    }
+
+    .menu-btn.locked {
+      background: linear-gradient(135deg, #6c757d, #495057);
+      cursor: not-allowed;
+      order: 999;
+      opacity: 0.85;
+    }
+
+    .wrong-menu-btn {
+      border: none;
+      border-radius: 12px;
+      padding: 20px;
+      text-align: left;
+      cursor: pointer;
+      background: linear-gradient(135deg, #dc3545, #a71d2a);
+      color: white;
+      order: 9999;
+      animation: wrongBlink 10s infinite;
+    }
+
+    @keyframes wrongBlink {
+      0%, 45% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(220,53,69,0);
+      }
+      50% {
+        opacity: 0.35;
+        transform: scale(1.02);
+        box-shadow: 0 0 18px rgba(220,53,69,0.45);
+      }
+      55%, 100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(220,53,69,0);
+      }
+    }
+
+    .quiz-container {
+      display: none;
+      position: relative;
+      padding-top: 85px;
+      min-height: 100vh;
+    }
+
+    .progress-bar {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 6px;
+      background: #28a745;
+      transition: 0.3s;
+      width: 0%;
+      border-radius: 14px 14px 0 0;
+    }
+
+    .main-menu-btn {
+      border: none;
+      background: none;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: calc(1rem + 4pt);
+      color: #333;
+      padding: 5px 0;
+    }
+
+    .header-info {
+      position: absolute;
+      top: 15px;
+      left: 20px;
+      right: 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      padding-right: 110px;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      min-width: 0;
+      flex: 1;
+      flex-wrap: wrap;
+    }
+
+    .header-subject {
+      font-weight: normal;
+      color: #777;
+      font-size: 0.95rem;
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .retry-badge {
+      display: none;
+      margin-bottom: 12px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffe69c;
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    .question-title {
+      margin-top: 0;
+      margin-bottom: 16px;
+      line-height: 1.45;
+      font-size: 1.2rem;
+      color: #222;
+    }
+
+    .option-btn {
+      width: 100%;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 12px;
+      border: 2px solid #e9ecef;
+      background: #f8f9fa;
+      text-align: left;
+      cursor: pointer;
+      font-size: 1.05rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+      position: relative;
+    }
+
+    .option-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+    }
+
+    .option-btn:disabled {
+      cursor: default;
+    }
+
+    .option-btn.correct {
+      background: #d4edda !important;
+      border-color: #28a745 !important;
+      color: #155724 !important;
+      font-weight: bold;
+    }
+
+    .option-btn.wrong {
+      background: #f8d7da !important;
+      border-color: #dc3545 !important;
+      color: #721c24 !important;
+      font-weight: bold;
+    }
+
+    .tick {
+      display: inline-block;
+      margin-left: 10px;
+      color: #1f9d45;
+      font-weight: bold;
+      opacity: 0;
+      transform: scale(0.4);
+    }
+
+    .tick.show {
+      animation: popTick 0.45s ease forwards;
+    }
+
+    @keyframes popTick {
+      0%   { opacity: 0; transform: scale(0.4); }
+      60%  { opacity: 1; transform: scale(1.2); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+
+    .explanation {
+      display:none !important;
+      margin-top: 20px;
+      padding: 15px;
+      background: #eaf2f8;
+      border-left: 5px solid #2980b9;
+      border-radius: 8px;
+      line-height: 1.5;
+    }
+
+    .nav-controls {
+      display: flex;
+      gap: 12px;
+      margin-top: 25px;
+    }
+
+    .nav-btn {
+      flex: 1;
+      padding: 18px;
+      border: none;
+      border-radius: 12px;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .next-btn { background: #007bff; }
+    .prev-btn {
+      background: #e9ecef;
+      color: #dc3545 !important;
+      border: 1px solid #ddd;
+    }
+
+    .quiz-footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 15px;
+      border-top: 1px solid #eee;
+      color: #666;
+      font-weight: bold;
+      font-size: 0.9rem;
+      flex-wrap: wrap;
+    }
+
+    .disclaimer-box {
+      margin-top: 20px;
+      padding: 15px;
+      background: #fdfdfd;
+      border: 1px solid #eee;
+      border-radius: 10px;
+      color: #888;
+      font-size: 0.8rem;
+      line-height: 1.4;
+      text-align: center;
+    }
+
+    .disclaimer-title {
+      display: block;
+      font-weight: bold;
+      color: #555;
+      margin-bottom: 5px;
+      text-transform: uppercase;
+      font-size: 0.7rem;
+    }
+
+    .source-tag {
+      position: fixed;
+      bottom: 8px;
+      left: 8px;
+      background: rgba(0, 0, 0, 0.05);
+      color: #777;
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 0.72rem;
+      font-weight: bold;
+      z-index: 9999;
+    }
+
+    .reset-set-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      background: #ffc107;
+      border: none;
+      padding: 8px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.8rem;
+      cursor: pointer;
+      z-index: 5;
+    }
+
+    @media (max-width: 480px) {
+      .quiz-container {
+        padding-top: 110px;
+      }
+
+      .header-info {
+        top: 12px;
+        left: 12px;
+        right: 12px;
+        padding-right: 104px;
+        align-items: flex-start;
+      }
+
+      .header-left {
+        display: block;
+        padding-right: 6px;
+      }
+
+      .main-menu-btn {
+        display: block;
+        font-size: 0.95rem;
+        padding: 0;
+        margin-bottom: 6px;
+      }
+
+      .header-subject {
+        display: block;
+        margin: 0;
+        font-size: 0.82rem;
+        line-height: 1.3;
+        max-width: 100%;
+      }
+
+      .question-title {
+        font-size: 1.05rem;
+      }
+
+      .option-btn {
+        font-size: 1rem;
+        padding: 14px;
+      }
+
+      .reset-set-btn {
+        top: 12px;
+        right: 12px;
+        font-size: 0.75rem;
+        padding: 7px 10px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div id="menuContainer" class="menu-container">
+    <div style="display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:20px;">
+      <h1 id="mainTitle" style="margin:0;">Balık Hastalıkları Deneme Sınavı</h1>
+      <button onclick="clearAllStatistics()" style="background:#dc3545; color:white; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:0.75rem;">
+        Verileri Sıfırla
+      </button>
+      <button onclick="shuffleAllQuestions()" style="background:#28a745; color:white; border:none; padding:8px 10px; border-radius:8px; cursor:pointer; font-size:0.75rem;">
+        Soruları Karıştır
+      </button>
+    </div>
+
+    <div id="menuGrid" class="menu-grid"></div>
+
+    <div class="disclaimer-box">
+      <span class="disclaimer-title">⚠️ Önemli Uyarı</span>
+      Bu sistemde yer alan içerikler yalnızca eğitim amaçlıdır. İçeriklerin kullanımından doğabilecek doğrudan veya dolaylı hiçbir sorumluluk kabul edilmez. Tüm kullanım sorumluluğu kullanıcıya aittir.
+    </div>
+  </div>
+
+  <div id="quizContainer" class="quiz-container">
+    <div class="progress-bar" id="progressBar"></div>
+
+    <div class="header-info">
+      <div class="header-left">
+        <button onclick="showMenu()" class="main-menu-btn">☰ Ana Menü</button>
+        <span id="headerSubject" class="header-subject"></span>
+      </div>
+    </div>
+
+    <button onclick="resetCurrentSet()" class="reset-set-btn">Seti Sıfırla</button>
+
+    <div id="retryBadge" class="retry-badge">Yalnış cevaplanan soru</div>
+    <h2 id="questionText" class="question-title">...</h2>
+
+    <div id="optionsArea"></div>
+
+    <div class="quiz-footer">
+      <div id="footerLeft">Kalan: 0</div>
+      <div id="footerRight">0 / 0</div>
+    </div>
+
+    <div id="explanationArea" class="explanation"></div>
+
+    <div class="nav-controls">
+      <button id="prevBtn" class="nav-btn prev-btn" onclick="goBack()" style="visibility:hidden;">❮ Önceki</button>
+      <button id="nextBtn" class="nav-btn next-btn" onclick="goForward()" style="visibility:hidden;">Yeni Soru ❯</button>
+    </div>
+  </div>
+</div>
+
+<div class="source-tag" id="sourceTag">Kaynak: yapayzeka / su_kalitesi_versiyon_6</div>
+
+<script>
+  const BASE_SUBJECT = "Balık Hastalıkları";
+  const VERSION_NUMBER = 1;
+
+  function buildVersionName(base, version) {
+    return `${base} Versiyon ${version}`;
+  }
+
+  function buildVersionSlug(base, version) {
+    return `${base.toLowerCase().replace(/ç/g, "c").replace(/ğ/g, "g").replace(/ı/g, "i").replace(/ö/g, "o").replace(/ş/g, "s").replace(/ü/g, "u").replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "")}_versiyon_${version}`;
+  }
+
+  const CURRENT_SUBJECT = BASE_SUBJECT;
+  const VERSION_SLUG = buildVersionSlug(BASE_SUBJECT, VERSION_NUMBER);
+  const SOURCE_TEXT = `Kaynak: yapayzeka / ${VERSION_SLUG}`;
+  const QUESTIONS_PER_SET = 30;
+
+  const questions = [
+    {
+        "q": "Özellikle yaz aylarında su sıcaklığının artmasıyla tatlı su balıklarında ortaya çıkan, sırt bölgesinde eyer tarzı renk açılmaları ve solungaç çürümesi lezyonlarına neden olan Flavobacterium columnare bakterisinin yol açtığı hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "Columnaris",
+            "Saprolegniasis",
+            "Vibriosis",
+            "Furunkülozis"
+        ],
+        "c": 0,
+        "e": "Flavobacterium columnare etkenli Columnaris hastalığı sıcak suda artar; eyer tarzı lezyon ve solungaç çürümesi tipiktir."
+    },
+    {
+        "q": "Tatlı su balıklarında deride tuz serpilmiş gibi beyaz noktalar oluşturan ve balıkların cisimlere sürtünmesine yol açan Ichthyophthirius multifiliis etkenli hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "Gyrodactylosis",
+            "Beyaz benek hastalığı",
+            "Trichodiniasis",
+            "Saprolegniasis"
+        ],
+        "c": 1,
+        "e": "Ichthyophthirius multifiliis, beyaz benek hastalığının etkenidir; beyaz noktalar ve sürtünme davranışı belirgindir."
+    },
+    {
+        "q": "Balıklarda hemorajiler, ülserler, karında şişkinlik ve septisemi tablosu oluşturan Aeromonas türlerinin neden olduğu hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "IPN",
+            "Dönme hastalığı",
+            "Lenfokistis",
+            "Motil Aeromonas septisemisi"
+        ],
+        "c": 3,
+        "e": "Aeromonas kaynaklı enfeksiyonlar özellikle stres altında hemoraji ve ülserlerle seyreden septisemik tablo oluşturur."
+    },
+    {
+        "q": "Levrek ve çipura gibi deniz balıklarında sık görülen, Vibrio türlerinin neden olduğu bakteriyel hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "Yersiniosis",
+            "Vibriosis",
+            "Costiasis",
+            "BKD"
+        ],
+        "c": 1,
+        "e": "Vibriosis deniz balıklarında önemli bakteriyel enfeksiyonlardan biridir."
+    },
+    {
+        "q": "Yersinia ruckeri bakterisinin neden olduğu ve özellikle ağız çevresinde kızarıklık ile tanınan hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "Kızıl ağız hastalığı",
+            "Columnaris",
+            "Furunkülozis",
+            "Streptokokkozis"
+        ],
+        "c": 0,
+        "e": "Yersinia ruckeri etkenli hastalık enterik kızıl ağız hastalığı olarak bilinir."
+    },
+    {
+        "q": "Balıkların vücudunda pamuksu beyaz-gri oluşumlarla karakterize, genellikle yaralanma sonrası gelişen mantar hastalığı aşağıdakilerden hangisidir?",
+        "o": [
+            "VHS",
+            "Argulosis",
+            "Saprolegniasis",
+            "Dactylogyrosis"
+        ],
+        "c": 2,
+        "e": "Saprolegnia türleri fırsatçı mantarlardır; pamuksu görünüm oluştururlar."
+    },
+    {
+        "q": "Solungaçlara yerleşerek aşırı mukus salgısı, solunum güçlüğü ve solungaç dokusunda tahribat oluşturan monogenean parazit aşağıdakilerden hangisidir?",
+        "o": [
+            "Dactylogyrus",
+            "Argulus",
+            "Trichodina",
+            "Lernaea"
+        ],
+        "c": 0,
+        "e": "Dactylogyrus solungaç paraziti olarak bilinir ve yoğun stokta önem kazanır."
+    },
+    {
+        "q": "Deri ve yüzgeçlere yerleşerek irritasyon oluşturan, mikroskopta saat camı görünümüyle tanınan protozoer parazit aşağıdakilerden hangisidir?",
+        "o": [
+            "Costia",
+            "Trichodina",
+            "Diplostomum",
+            "Chilodonella"
+        ],
+        "c": 1,
+        "e": "Trichodina'nın karakteristik dairesel yapısı nedeniyle saat camı görünümü tanımlanır."
+    },
+    {
+        "q": "Balığın derisine vantuzlarıyla tutunup kan emen, balık biti olarak da bilinen makroskobik dış parazit aşağıdakilerden hangisidir?",
+        "o": [
+            "Lernaea",
+            "Ichthyophthirius",
+            "Argulus",
+            "Gyrodactylus"
+        ],
+        "c": 2,
+        "e": "Argulus bir kabuklu ektoparazittir ve balık biti adıyla bilinir."
+    },
+    {
+        "q": "Balıkların kas dokusuna baş kısmını gömerek yaşayan ve çapa kurdu olarak bilinen parazit aşağıdakilerden hangisidir?",
+        "o": [
+            "Trichodina",
+            "Lernaea",
+            "Dactylogyrus",
+            "Ergasilus"
+        ],
+        "c": 1,
+        "e": "Lernaea, çapa kurdu olarak bilinen ve kas dokusuna yerleşen parazittir."
+    },
+    {
+        "q": "Myxobolus cerebralis etkeninin neden olduğu, denge kaybı ve kuyrukta kararma ile seyreden hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "BKD",
+            "IPN",
+            "Vibriosis",
+            "Dönme hastalığı"
+        ],
+        "c": 3,
+        "e": "Myxobolus cerebralis özellikle salmonidlerde dönme hastalığına yol açar."
+    },
+    {
+        "q": "Yavru alabalıklarda pankreas nekrozu, ani ölümler ve karın şişkinliği ile seyreden viral hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "IPN",
+            "Saprolegniasis",
+            "Lenfokistis",
+            "IHN"
+        ],
+        "c": 0,
+        "e": "IPN, özellikle ilk yemleme dönemindeki yavru salmonidlerde önemlidir."
+    },
+    {
+        "q": "Soğuk su koşullarında iç organ ve kaslarda yaygın kanamalar oluşturan Viral Hemorajik Septisemi hastalığının kısaltması aşağıdakilerden hangisidir?",
+        "o": [
+            "IHN",
+            "BKD",
+            "MAS",
+            "VHS"
+        ],
+        "c": 3,
+        "e": "VHS, Viral Hemorajik Septisemi'nin kısaltmasıdır."
+    },
+    {
+        "q": "Salmonidlerde böbreklerde grimsi nodüller oluşturan, Renibacterium salmoninarum etkenli hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "Streptokokkozis",
+            "Furunkülozis",
+            "BKD",
+            "Yersiniosis"
+        ],
+        "c": 2,
+        "e": "Bakteriyel Böbrek Hastalığı (BKD), Renibacterium salmoninarum tarafından oluşturulur."
+    },
+    {
+        "q": "Aeromonas salmonicida bakterisinin yol açtığı, kaslarda çıban benzeri lezyonlarla seyreden hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "Furunkülozis",
+            "Columnaris",
+            "Lenfokistis",
+            "Pastörellozis"
+        ],
+        "c": 0,
+        "e": "Furunkülozis, salmonidlerde görülen önemli bakteriyel hastalıklardandır."
+    },
+    {
+        "q": "Photobacterium damselae subsp. piscicida etkenli, iç organlarda beyaz odaklarla seyreden hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "VHS",
+            "Pastörellozis",
+            "Dactylogyrosis",
+            "Costiasis"
+        ],
+        "c": 1,
+        "e": "Pastörellozis özellikle deniz balıklarında psödotüberküloz görünümü oluşturabilir."
+    },
+    {
+        "q": "Yüksek sıcaklıklarda levreklerde gözlerde dışa fırlama, dengesiz yüzme ve meningoensefalitis tablosuna yol açabilen bakteriyel hastalık aşağıdakilerden hangisidir?",
+        "o": [
+            "BKD",
+            "Beyaz benek hastalığı",
+            "Kızıl ağız hastalığı",
+            "Streptokokkozis"
+        ],
+        "c": 3,
+        "e": "Streptococcus türleri sıcak dönemlerde levreklerde ciddi kayıplara neden olabilir."
+    },
+    {
+        "q": "Balığın göz merceğine yerleşerek körlük ve görme bozukluğu oluşturan parazit aşağıdakilerden hangisidir?",
+        "o": [
+            "Lernaea",
+            "Gyrodactylus",
+            "Diplostomum",
+            "Argulus"
+        ],
+        "c": 2,
+        "e": "Diplostomum metaserkaryaları göz merceğinde yerleşerek görmeyi bozar."
+    },
+    {
+        "q": "Gyrodactylus ile ilgili aşağıdaki ifadelerden hangisi doğrudur?",
+        "o": [
+            "Canlı doğuran ve daha çok deri-yüzgeçlere yerleşen monogenean parazittir",
+            "Sadece deniz balıklarının göz merceğinde yaşar",
+            "Yalnızca iç organlarda yaşar",
+            "Mantar hastalığı etkenidir"
+        ],
+        "c": 0,
+        "e": "Gyrodactylus canlı doğuran bir monogenean olup daha çok deri ve yüzgeçlere yerleşir."
+    },
+    {
+        "q": "Columnaris hastalığının görülme riskini en fazla artıran çevresel koşul aşağıdakilerden hangisidir?",
+        "o": [
+            "Aşırı berrak su ve düşük pH",
+            "Yalnızca yüksek tuzluluk",
+            "Düşük stok yoğunluğu ve düşük sıcaklık",
+            "Yüksek sıcaklık ve organik yük artışı"
+        ],
+        "c": 3,
+        "e": "Columnaris sıcaklık yükseldiğinde ve su kalitesi bozulduğunda daha sık görülür."
+    },
+    {
+        "q": "Aşağıdaki hastalıklardan hangisi mantar kökenlidir?",
+        "o": [
+            "Yersiniosis",
+            "IPN",
+            "Saprolegniasis",
+            "VHS"
+        ],
+        "c": 2,
+        "e": "Saprolegniasis mantar kökenli bir hastalıktır."
+    },
+    {
+        "q": "Aşağıdaki hastalıklardan hangisinin etkeni bir virüstür?",
+        "o": [
+            "Furunkülozis",
+            "IHN",
+            "Vibriosis",
+            "Columnaris"
+        ],
+        "c": 1,
+        "e": "IHN viral bir hastalıktır ve özellikle yavru salmonidlerde önemlidir."
+    },
+    {
+        "q": "İnfeksiyöz Hematopoetik Nekroz (IHN) en çok hangi balık grubunda ekonomik kayıplara yol açar?",
+        "o": [
+            "Kabuklularda",
+            "Yalnızca yayın balıklarında",
+            "Yetişkin sazanlarda",
+            "Yavru salmonidlerde"
+        ],
+        "c": 3,
+        "e": "IHN özellikle yavru ve genç salmonidlerde yüksek mortaliteye neden olur."
+    },
+    {
+        "q": "Lenfokistis hastalığı için en tipik bulgu aşağıdakilerden hangisidir?",
+        "o": [
+            "Deri ve yüzgeçlerde nodüler beyaz lezyonlar",
+            "Karında serbest gaz toplanması",
+            "Eyer tarzı sırt lezyonu",
+            "Yalnızca böbrekte apseler"
+        ],
+        "c": 0,
+        "e": "Lenfokistis, özellikle deri ve yüzgeçlerde siğilimsi-nodüler beyaz oluşumlarla seyreder."
+    },
+    {
+        "q": "Balıklarda tüberküloz etkeni olarak en çok hangi bakteri grubu bilinir?",
+        "o": [
+            "Yersinia türleri",
+            "Mycobacterium türleri",
+            "Flavobacterium türleri",
+            "Vibrio türleri"
+        ],
+        "c": 1,
+        "e": "Balık tüberkülozu çoğunlukla Mycobacterium türleri ile ilişkilidir."
+    },
+    {
+        "q": "Balık tüberkülozu ile ilgili aşağıdaki ifadelerden hangisi doğrudur?",
+        "o": [
+            "Yalnızca deniz balıklarında görülür",
+            "Sadece akut seyirlidir",
+            "İnsana bulaşma riski taşıyabilir",
+            "Her zaman ağız kızarıklığı yapar"
+        ],
+        "c": 2,
+        "e": "Mycobacterium kaynaklı enfeksiyonlar zoonotik risk taşıyabilir."
+    },
+    {
+        "q": "Costia olarak da bilinen parazitin güncel adı aşağıdakilerden hangisidir?",
+        "o": [
+            "Ichthyobodo necator",
+            "Dactylogyrus vastator",
+            "Lernaea cyprinacea",
+            "Diplostomum spathaceum"
+        ],
+        "c": 0,
+        "e": "Costia hastalığının etkeni güncel sınıflamada Ichthyobodo necator olarak adlandırılır."
+    },
+    {
+        "q": "Aşırı mukus oluşumu, mat deri görünümü ve solunum güçlüğü ile seyreden Costia enfeksiyonunun etkeni aşağıdakilerden hangisidir?",
+        "o": [
+            "Aeromonas hydrophila",
+            "Ichthyobodo necator",
+            "Saprolegnia parasitica",
+            "Argulus foliaceus"
+        ],
+        "c": 1,
+        "e": "Ichthyobodo necator küçük ama önemli bir ektoparazittir."
+    },
+    {
+        "q": "Balıklarda beyaz benek hastalığıyla mücadelede aşağıdakilerden hangisi en temel yaklaşımlardan biridir?",
+        "o": [
+            "Balıkları sürekli aç bırakmak",
+            "Yalnızca yem miktarını artırmak",
+            "Sadece ışık şiddetini azaltmak",
+            "Su kalitesini iyileştirmek ve yaşam döngüsünü kıracak uygulamalar yapmak"
+        ],
+        "c": 3,
+        "e": "Beyaz benek etkeni çevrede serbest dönemlere sahip olduğundan su yönetimi ve uygun tedavi önemlidir."
+    },
+    {
+        "q": "Saprolegnia enfeksiyonunun ortaya çıkmasını en fazla kolaylaştıran durum aşağıdakilerden hangisidir?",
+        "o": [
+            "Yüksek çözünmüş oksijen",
+            "Dengeli vitamin takviyesi",
+            "Deri yaralanması ve stres",
+            "Düşük stok yoğunluğu"
+        ],
+        "c": 2,
+        "e": "Saprolegnia çoğu zaman yara, stres ve kötü çevre koşullarını takiben gelişir."
+    },
+    {
+        "q": "Aşağıdaki hastalık-etken eşleştirmelerinden hangisi doğrudur?",
+        "o": [
+            "Columnaris — Flavobacterium columnare",
+            "IPN — Saprolegnia ferax",
+            "VHS — Aeromonas hydrophila",
+            "BKD — Yersinia ruckeri"
+        ],
+        "c": 0,
+        "e": "Columnaris hastalığının etkeni Flavobacterium columnare'dir."
+    },
+    {
+        "q": "Aşağıdaki hastalık-etken eşleştirmelerinden hangisi yanlıştır?",
+        "o": [
+            "Furunkülozis — Aeromonas salmonicida",
+            "Beyaz benek — Dactylogyrus",
+            "Vibriosis — Vibrio türleri",
+            "Kızıl ağız — Yersinia ruckeri"
+        ],
+        "c": 1,
+        "e": "Beyaz benek hastalığının etkeni Ichthyophthirius multifiliis'tir; Dactylogyrus değildir."
+    },
+    {
+        "q": "Dactylogyrus ve Gyrodactylus arasındaki temel fark aşağıdakilerden hangisidir?",
+        "o": [
+            "Aralarında fark yoktur",
+            "İkisi de yalnızca iç parazittir",
+            "İlkı solungaçta, ikincisi daha çok deri-yüzgeçte görülür",
+            "İlkı virüs, ikincisi bakteridir"
+        ],
+        "c": 2,
+        "e": "Dactylogyrus daha çok solungaç, Gyrodactylus ise deri ve yüzgeçlerle ilişkilidir."
+    },
+    {
+        "q": "Balıklarda dış parazit yoğunluğunu artıran en önemli işletme faktörlerinden biri aşağıdakilerden hangisidir?",
+        "o": [
+            "Aşırı stok yoğunluğu",
+            "Düşük yem proteini",
+            "Yalnızca büyük havuz kullanımı",
+            "Uzun fotoperiyot"
+        ],
+        "c": 0,
+        "e": "Yoğun stok, temas ve stres nedeniyle ektoparazitlerin hızla yayılmasını kolaylaştırır."
+    },
+    {
+        "q": "Aşağıdaki hastalıklardan hangisi daha çok deniz balıklarıyla ilişkilidir?",
+        "o": [
+            "Dönme hastalığı",
+            "Kızıl ağız hastalığı",
+            "BKD",
+            "Vibriosis"
+        ],
+        "c": 3,
+        "e": "Vibriosis özellikle deniz balıklarında önemli bir bakteriyel hastalıktır."
+    },
+    {
+        "q": "Balıklarda görülen birçok fırsatçı bakteriyel hastalığın ortaya çıkmasında aşağıdakilerden hangisi ortak hazırlayıcı faktördür?",
+        "o": [
+            "Aşırı vitamin takviyesi",
+            "Stres ve kötü su kalitesi",
+            "Yalnızca yüksek kalsiyum",
+            "Sadece karanlık ortam"
+        ],
+        "c": 1,
+        "e": "Stres, kötü su kalitesi ve yoğunluk birçok bakteriyel hastalığı kolaylaştırır."
+    },
+    {
+        "q": "Aşağıdaki hastalıklardan hangisi zoonoz riski nedeniyle personel sağlığı açısından da önem taşır?",
+        "o": [
+            "Dönme hastalığı",
+            "IPN",
+            "Lenfokistis",
+            "Balık tüberkülozu"
+        ],
+        "c": 3,
+        "e": "Mycobacterium kaynaklı balık tüberkülozu insanlarda da deri enfeksiyonlarına yol açabilir."
+    },
+    {
+        "q": "Argulus enfestasyonunda balıkta beklenen bulgu aşağıdakilerden hangisidir?",
+        "o": [
+            "Yalnızca pankreas nekrozu",
+            "Böbrekte grimsi nodül",
+            "Deride irritasyon ve kan emmeye bağlı lezyonlar",
+            "Göz merceğinde beyaz perde"
+        ],
+        "c": 2,
+        "e": "Argulus deriye tutunarak irritasyon, yaralanma ve sekonder enfeksiyonlara zemin hazırlar."
+    },
+    {
+        "q": "Lernaea enfestasyonunda aşağıdaki bulgulardan hangisi daha tipiktir?",
+        "o": [
+            "Kas dokusuna gömülü ipliksi-çapa benzeri parazit",
+            "Karında sıvı birikimi",
+            "Yüzgeçte nodüler viral oluşumlar",
+            "Sırtta eyer lezyonu"
+        ],
+        "c": 0,
+        "e": "Lernaea dişileri baş kısımlarını dokuya gömerek görünür çapa benzeri yapı oluşturur."
+    },
+    {
+        "q": "Aşağıdaki hastalıklardan hangisinde yüzgeç ve deri üzerinde pamuksu görünüm beklenir?",
+        "o": [
+            "IHN",
+            "Saprolegniasis",
+            "VHS",
+            "BKD"
+        ],
+        "c": 1,
+        "e": "Pamuksu görünüm mantar enfeksiyonları için tipiktir."
+    },
+    {
+        "q": "Beyaz benek hastalığının tipik saha bulgusu aşağıdakilerden hangisidir?",
+        "o": [
+            "İç organlarda siyah lekeler",
+            "Ağız çevresinde ülser olmadan kızarma",
+            "Deride küçük beyaz noktalar",
+            "Sadece karaciğer büyümesi"
+        ],
+        "c": 2,
+        "e": "Beyaz benek hastalığında deride beyaz nokta görünümü karakteristiktir."
+    },
+    {
+        "q": "Aşağıdaki hastalıklardan hangisi özellikle böbrek lezyonlarıyla anılır?",
+        "o": [
+            "Argulosis",
+            "BKD",
+            "Trichodiniasis",
+            "Lenfokistis"
+        ],
+        "c": 1,
+        "e": "BKD adı üzerinde bakteriyel böbrek hastalığıdır ve böbrek lezyonları tipiktir."
+    },
+    {
+        "q": "Flavobacterium columnare ile Saprolegnia enfeksiyonunu ayırmada aşağıdakilerden hangisi daha yardımcıdır?",
+        "o": [
+            "Columnaris mantar kökenlidir",
+            "Saprolegnia yalnızca iç organda görülür",
+            "İkisi tamamen aynıdır",
+            "Columnaris'te eyer lezyonu ve solungaç nekrozu daha belirgindir"
+        ],
+        "c": 3,
+        "e": "Columnaris bakteriyel olup eyer lezyonu ve solungaç nekrozu ile; Saprolegnia ise pamuksu mantar kolonileriyle öne çıkar."
+    },
+    {
+        "q": "Aşağıdaki seçeneklerden hangisi balık hastalıklarıyla mücadelede koruyucu yaklaşım olarak önceliklidir?",
+        "o": [
+            "Biyogüvenlik, su kalitesi yönetimi ve stok yoğunluğunu uygun tutmak",
+            "Yalnızca daha pahalı yem kullanmak",
+            "Sadece havuz rengini değiştirmek",
+            "Bütün balıklara sürekli antibiyotik vermek"
+        ],
+        "c": 0,
+        "e": "Koruyucu hekimlikte biyogüvenlik, karantina, uygun yoğunluk ve iyi su kalitesi temel unsurlardır."
+    },
+    {
+        "q": "Bir işletmede yeni gelen balıkların doğrudan mevcut stoğa katılması yerine önce ayrı tutulmasının temel amacı aşağıdakilerden hangisidir?",
+        "o": [
+            "Balıkların daha hızlı büyümesini sağlamak",
+            "Yem tüketimini artırmak",
+            "Karantina ile hastalık giriş riskini azaltmak",
+            "Renklenmeyi artırmak"
+        ],
+        "c": 2,
+        "e": "Karantina, yeni balıklarla gelebilecek patojenlerin işletmeye yayılmasını önlemeye yardımcı olur."
+    },
+    {
+        "q": "Aşağıdaki durumlardan hangisi balıklarda hastalığa yatkınlığı artırır?",
+        "o": [
+            "Uygun oksijen düzeyi",
+            "Düzenli temizlik",
+            "Dengeli stoklama",
+            "Ani sıcaklık değişimleri"
+        ],
+        "c": 3,
+        "e": "Ani sıcaklık değişimleri balıklarda stres oluşturarak bağışıklığı zayıflatabilir."
+    },
+    {
+        "q": "Balıklarda hastalık yönetiminde kesin tanı için aşağıdakilerden hangisi en uygundur?",
+        "o": [
+            "Klinik bulguların yanında laboratuvar incelemesi yapmak",
+            "Yalnızca yem tüketimini izlemek",
+            "Sadece balığın yüzey rengine bakmak",
+            "Havuz suyuna rastgele ilaç eklemek"
+        ],
+        "c": 0,
+        "e": "Saha bulguları önemli olsa da kesin tanı için mikroskobik, bakteriyolojik veya virolojik laboratuvar incelemesi gerekir."
+    },
+    {
+        "q": "Aşağıdakilerden hangisi viral hastalıklarla ilgili doğru bir ifadedir?",
+        "o": [
+            "Su sıcaklığından etkilenmezler",
+            "Koruyucu önlemler ve biyogüvenlik büyük önem taşır",
+            "Hepsi mutlaka antibiyotikle tedavi edilir",
+            "Yalnızca deniz balıklarında görülür"
+        ],
+        "c": 1,
+        "e": "Viral hastalıklarda doğrudan etkili tedavi sınırlı olduğundan korunma ve biyogüvenlik çok önemlidir."
+    },
+    {
+        "q": "Aşağıdakilerden hangisi balık hastalıklarının yayılmasını önlemede personel ve ekipman yönetimi açısından doğru uygulamadır?",
+        "o": [
+            "Ölü balıkları havuzda bırakmak",
+            "Hasta balıkları sağlamlarla karıştırmak",
+            "Aynı ekipmanı tüm havuzlarda yıkamadan kullanmak",
+            "Ekipmanları dezenfekte ederek birimden birime geçirmek"
+        ],
+        "c": 3,
+        "e": "Ekipman dezenfeksiyonu ve ölü balıkların hızla uzaklaştırılması bulaşmayı azaltan temel uygulamalardır."
+    },
+    {
+        "q": "Aşağıdaki hastalıklardan hangisi protozoer parazit kaynaklıdır?",
+        "o": [
+            "BKD",
+            "Furunkülozis",
+            "Trichodiniasis",
+            "Vibriosis"
+        ],
+        "c": 2,
+        "e": "Trichodina protozoer bir dış parazittir; diğer seçenekler bakteriyel hastalıklardır."
+    }
+];
+
+  document.getElementById("mainTitle").textContent = `${BASE_SUBJECT} Deneme Sınavı`;
+  document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+  document.getElementById("sourceTag").textContent = SOURCE_TEXT;
+  document.title = `${BASE_SUBJECT} Deneme Sınavı`;
+
+  if (performance.navigation.type === performance.navigation.TYPE_RELOAD || !sessionStorage.getItem("session_active")) {
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+    });
+    sessionStorage.setItem("session_active", "true");
+  }
+
+  let currentQuestions = [];
+  let currentIndex = 0;
+  let solvedIndex = -1;
+  let userAnswers = {};
+  let currentSetKey = "";
+  let stats = { correct: 0, wrong: 0 };
+  let wrongQuestionsMode = false;
+
+  function storagePrefix() {
+    return "exam_" + CURRENT_SUBJECT.replace(/\s+/g, "_") + "_";
+  }
+
+  function setStateKey(index) {
+    return storagePrefix() + "state_set_" + index;
+  }
+
+  function wrongQuestionsKey() {
+    return storagePrefix() + "wrong_questions_pool";
+  }
+
+  function getWrongQuestionsPool() {
+    return JSON.parse(localStorage.getItem(wrongQuestionsKey()) || "[]");
+  }
+
+  function saveWrongQuestionsPool(pool) {
+    localStorage.setItem(wrongQuestionsKey(), JSON.stringify(pool));
+  }
+
+  function addWrongQuestionToPool(question) {
+    const pool = getWrongQuestionsPool();
+
+    const exists = pool.some(item =>
+      item.q === question.q &&
+      JSON.stringify(item.o) === JSON.stringify(question.o)
+    );
+
+    if (!exists) {
+      pool.push({
+        q: question.q,
+        o: [...question.o],
+        c: question.c,
+        e: question.e || ""
+      });
+      saveWrongQuestionsPool(pool);
+    }
+  }
+
+  function normalizeQuestion(q, originalIndex) {
+    return {
+      id: q.id || ("q_" + originalIndex + "_" + Math.random().toString(36).slice(2, 8)),
+      originalNo: originalIndex + 1,
+      q: q.q,
+      o: [...q.o],
+      c: q.c,
+      e: q.e || "",
+      isRetry: q.isRetry || false,
+      retryFrom: q.retryFrom || null,
+      retryCount: q.retryCount || 0,
+      answeredCorrectly: q.answeredCorrectly || false
+    };
+  }
+
+  function initMenu() {
+    const menuGrid = document.getElementById("menuGrid");
+    menuGrid.innerHTML = "";
+
+    const totalSets = Math.ceil(questions.length / QUESTIONS_PER_SET);
+
+    let setsPerButton = 1;
+    let buttonCount = totalSets;
+
+    if (buttonCount > 10) {
+      setsPerButton = 2;
+      buttonCount = Math.ceil(totalSets / setsPerButton);
+    }
+
+    buttonCount = Math.min(buttonCount, 10);
+
+    for (let i = 0; i < buttonCount; i++) {
+      const startSetNo = i * setsPerButton + 1;
+      const endSetNo = Math.min(startSetNo + setsPerButton - 1, totalSets);
+
+      const start = (startSetNo - 1) * QUESTIONS_PER_SET;
+      const end = Math.min(endSetNo * QUESTIONS_PER_SET, questions.length);
+
+      if (start >= questions.length) continue;
+
+      const key = setStateKey(i);
+
+      const saved = JSON.parse(localStorage.getItem(key) || "null");
+      const solved = saved ? Object.keys(saved.userAnswers || {}).length : 0;
+      const correct = saved?.stats?.correct || 0;
+      const wrong = saved?.stats?.wrong || 0;
+
+      const totalCurrent = saved?.currentQuestions?.length || (end - start);
+      const isCompleted = saved ? (solved >= totalCurrent && totalCurrent > 0) : false;
+
+      const label = startSetNo === endSetNo
+        ? `Deneme-${startSetNo}`
+        : `Deneme-${startSetNo}-${endSetNo}`;
+
+      const btn = document.createElement("button");
+      btn.className = `menu-btn ${isCompleted ? "locked" : ""}`;
+      btn.innerHTML = `
+        <strong>${label}</strong><br>
+        <small>${end - start} Soru | Çözülen ${solved} (Doğru ${correct} Yanlış ${wrong})</small>
+      `;
+
+      if (!isCompleted) {
+        btn.onclick = () => startSet(i, key, start, end);
+      }
+
+      menuGrid.appendChild(btn);
+    }
+
+    const wrongPool = getWrongQuestionsPool();
+
+    if (wrongPool.length > 0) {
+      const wrongBtn = document.createElement("button");
+      wrongBtn.className = "wrong-menu-btn";
+      wrongBtn.innerHTML = `
+        <strong>Yanlış Yapılan Sorular</strong><br>
+        <small>${wrongPool.length} Soru | Yeniden çöz</small>
+      `;
+      wrongBtn.onclick = openWrongQuestions;
+      menuGrid.appendChild(wrongBtn);
+    }
+  }
+
+  function openWrongQuestions() {
+    const pool = getWrongQuestionsPool();
+    if (!pool.length) return;
+
+    wrongQuestionsMode = true;
+    currentSetKey = storagePrefix() + "wrong_questions_state";
+
+    const saved = JSON.parse(localStorage.getItem(currentSetKey) || "null");
+
+    if (saved) {
+      currentQuestions = saved.currentQuestions;
+      currentIndex = saved.currentIndex;
+      solvedIndex = saved.solvedIndex;
+      userAnswers = saved.userAnswers || {};
+      stats = saved.stats || { correct: 0, wrong: 0 };
+    } else {
+      currentQuestions = pool.map((q, i) => ({
+        id: "wrong_" + i + "_" + Math.random().toString(36).slice(2, 8),
+        originalNo: i + 1,
+        q: q.q,
+        o: [...q.o],
+        c: q.c,
+        e: q.e || "",
+        isRetry: false,
+        retryFrom: null,
+        retryCount: 0,
+        answeredCorrectly: false
+      }));
+
+      currentIndex = 0;
+      solvedIndex = -1;
+      userAnswers = {};
+      stats = { correct: 0, wrong: 0 };
+      saveState();
+    }
+
+    document.getElementById("menuContainer").style.display = "none";
+    document.getElementById("quizContainer").style.display = "block";
+    document.getElementById("headerSubject").textContent = "Yanlış Yapılan Sorular";
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function startSet(idx, key, start, end) {
+    wrongQuestionsMode = false;
+    currentSetKey = key;
+
+    const saved = JSON.parse(localStorage.getItem(key) || "null");
+
+    if (saved) {
+      currentQuestions = saved.currentQuestions;
+      currentIndex = saved.currentIndex;
+      solvedIndex = saved.solvedIndex;
+      userAnswers = saved.userAnswers || {};
+      stats = saved.stats || { correct: 0, wrong: 0 };
+    } else {
+      currentQuestions = questions.slice(start, end).map((q, i) => normalizeQuestion(q, start + i));
+      currentIndex = 0;
+      solvedIndex = -1;
+      userAnswers = {};
+      stats = { correct: 0, wrong: 0 };
+      saveState();
+    }
+
+    document.getElementById("menuContainer").style.display = "none";
+    document.getElementById("quizContainer").style.display = "block";
+    document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function getQuestionTitle(q) {
+    return `Soru-${q.originalNo}: ${q.q}`;
+  }
+
+  function loadQuestion() {
+    const q = currentQuestions[currentIndex];
+    const progress = ((currentIndex + 1) / currentQuestions.length) * 100;
+
+    document.getElementById("progressBar").style.width = progress + "%";
+    document.getElementById("footerLeft").textContent = `Kalan: ${Math.max(currentQuestions.length - (currentIndex + 1), 0)}`;
+    document.getElementById("footerRight").textContent = `${currentIndex + 1} / ${currentQuestions.length}`;
+    document.getElementById("questionText").textContent = getQuestionTitle(q);
+
+    const retryBadge = document.getElementById("retryBadge");
+    retryBadge.style.display = q.isRetry ? "block" : "none";
+
+    const optArea = document.getElementById("optionsArea");
+    const expArea = document.getElementById("explanationArea");
+    optArea.innerHTML = "";
+    expArea.style.display = "none";
+    expArea.innerHTML = "";
+
+    const letters = ["A", "B", "C", "D"];
+
+    q.o.forEach((opt, idx) => {
+      const btn = document.createElement("button");
+      btn.className = "option-btn";
+      btn.innerHTML = `<strong>${letters[idx]})</strong> ${opt}`;
+
+      if (currentIndex <= solvedIndex) {
+        btn.disabled = true;
+        const userChoice = userAnswers[currentIndex];
+
+        if (idx === userChoice) {
+          if (userChoice === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          } else {
+            btn.classList.add("wrong");
+          }
+        }
+
+        if (wrongQuestionsMode) {
+          if (idx === q.c) {
+            btn.classList.add("correct");
+            btn.innerHTML += ` <span class="tick show">✔</span>`;
+          }
+          } else {
+          if (userChoice === q.c) {
+            } else if (q.isRetry) {
+            if (idx === q.c) {
+              btn.classList.add("correct");
+              btn.innerHTML += ` <span class="tick show">✔</span>`;
+            }
+            }
+        }
+      } else {
+        btn.onclick = () => selectOption(idx);
+      }
+
+      optArea.appendChild(btn);
+    });
+
+    document.getElementById("prevBtn").style.visibility = currentIndex > 0 ? "visible" : "hidden";
+    document.getElementById("nextBtn").style.visibility = currentIndex <= solvedIndex ? "visible" : "hidden";
+  }
+
+  function selectOption(idx) {
+    const q = currentQuestions[currentIndex];
+    const isCorrect = idx === q.c;
+
+    userAnswers[currentIndex] = idx;
+    solvedIndex = Math.max(solvedIndex, currentIndex);
+
+    if (isCorrect) {
+      stats.correct++;
+      q.answeredCorrectly = true;
+    } else {
+      stats.wrong++;
+
+      if (wrongQuestionsMode) {
+        // Yanlış Yapılan Sorular modunda soru yeniden eklenmez.
+      } else {
+        addWrongQuestionToPool(q);
+
+        if (!q.isRetry) {
+          const retryQuestion = {
+            ...q,
+            isRetry: true,
+            retryFrom: q.originalNo,
+            retryCount: 1
+          };
+
+          const insertIndex = Math.min(currentIndex + 5, currentQuestions.length);
+          currentQuestions.splice(insertIndex, 0, retryQuestion);
+        }
+      }
+    }
+
+    saveState();
+    loadQuestion();
+  }
+
+  function saveState() {
+    localStorage.setItem(currentSetKey, JSON.stringify({
+      currentQuestions,
+      currentIndex,
+      solvedIndex,
+      userAnswers,
+      stats
+    }));
+  }
+
+  function goForward() {
+    if (currentIndex < solvedIndex) {
+      currentIndex = solvedIndex + 1;
+    } else if (currentIndex < currentQuestions.length - 1) {
+      currentIndex++;
+    } else {
+      return showMenu();
+    }
+
+    saveState();
+    loadQuestion();
+    window.scrollTo(0, 0);
+  }
+
+  function goBack() {
+    if (currentIndex > 0) {
+      currentIndex--;
+      saveState();
+      loadQuestion();
+      window.scrollTo(0, 0);
+    }
+  }
+
+  function showMenu() {
+    wrongQuestionsMode = false;
+    document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+    document.getElementById("quizContainer").style.display = "none";
+    document.getElementById("menuContainer").style.display = "block";
+    initMenu();
+    window.scrollTo(0, 0);
+  }
+
+  function clearAllStatistics() {
+    if (confirm("Tüm veriler sıfırlansın mı?")) {
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+      });
+      initMenu();
+    }
+  }
+
+  function resetCurrentSet() {
+    if (confirm("Bu deneme sıfırlansın mı?")) {
+      localStorage.removeItem(currentSetKey);
+      showMenu();
+    }
+  }
+
+  initMenu();
+</script>
+
+<script>
+function shuffleAllQuestions() {
+  if (!confirm("Sorular ve şıkları karıştırılsın mı?")) return;
+
+  questions.forEach(q => {
+    const correctValue = q.o[q.c];
+
+    for (let i = q.o.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [q.o[i], q.o[j]] = [q.o[j], q.o[i]];
+    }
+
+    q.c = q.o.findIndex(opt => opt === correctValue);
+  });
+
+  for (let i = questions.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [questions[i], questions[j]] = [questions[j], questions[i]];
+  }
+
+  Object.keys(localStorage).forEach(k => {
+    if (k.startsWith(storagePrefix())) localStorage.removeItem(k);
+  });
+
+  currentQuestions = [];
+  currentIndex = 0;
+  solvedIndex = -1;
+  userAnswers = {};
+  currentSetKey = "";
+  stats = { correct: 0, wrong: 0 };
+  wrongQuestionsMode = false;
+
+  document.getElementById("quizContainer").style.display = "none";
+  document.getElementById("menuContainer").style.display = "block";
+  document.getElementById("headerSubject").textContent = BASE_SUBJECT;
+
+  alert("Sorular karıştırıldı!");
+  initMenu();
+  window.scrollTo(0, 0);
+}
+</script>
+
+</body>
+</html>
